@@ -13,16 +13,20 @@ con <- apsdFuns::roracle_login(key_name = 'apsd', key_service = 'DB01P', schema 
 catch_data_orig <- dbGetQuery(conn = con,
                          statement = readr::read_file("sql/catch_data.sql"))
 
-# get run date for
-cams_run <- dbGetQuery(conn = con, statement = "SELECT MAX(DISTINCT date_run) date_run FROM cams_garfo.cams_land")$DATE_RUN
+# get run date for cams
+cams_run <- as.Date(dbGetQuery(conn = con
+                               , statement = "SELECT MAX(DISTINCT date_run) date_run FROM cams_garfo.cams_land")$DATE_RUN) - 2
 
 catch_data <- catch_data_orig |>
-  mutate(FISHERY_GROUP = case_when(STOCK_ID %in% c('YELCCGM', 'FLWGB', 'FLWSNEMA', 'HKWGMMA', 'REDGMGBSS')
-                                   & FISHERY_GROUP %in% c('GROUND', 'STATE') ~ FISHERY_GROUP,
+  mutate(FISHERY_GROUP = case_when(STOCK_ID %in% c('YELCCGM', 'FLWSNEMA', 'HKWGMMA', 'REDGMGBSS')
+                                   & FISHERY_GROUP %in% c('SECT', 'CP', 'STATE') ~ FISHERY_GROUP,
+                                   STOCK_ID %in% c('FLWGB', 'YELGB')
+                                   & FISHERY_GROUP %in% c('SECT', 'CP') ~ 'GROUND',
+                                   STOCK_ID == 'FLWGB' & FISHERY_GROUP == 'STATE' ~ FISHERY_GROUP,
                                    STOCK_ID == 'YELGB'
-                                   & FISHERY_GROUP %in% c('GROUND', 'SCALLOP', 'WHITING', 'STATE') ~ FISHERY_GROUP,
+                                   & FISHERY_GROUP %in% c('SECT', 'CP', 'SCALLOP', 'WHITING', 'SQUID/WHITING', 'STATE') ~ FISHERY_GROUP,
                                    STOCK_ID == 'YELSNE'
-                                   & FISHERY_GROUP %in% c('GROUND', 'SCALLOP', 'STATE') ~ FISHERY_GROUP,
+                                   & FISHERY_GROUP %in% c('SECT', 'CP', 'SCALLOP', 'STATE') ~ FISHERY_GROUP,
                                    TRUE ~ 'OTHER')) |> ## re-group the fishery groups to align with groundfish sub-ACLs
   group_by(FISHERY_GROUP, DATE_TRIP, STOCK_ID) |>
   summarise(DISCARD = sum(DISCARD), ## re-sum daily totals
@@ -36,9 +40,7 @@ catch_data <- catch_data_orig |>
 ## groundfish has oracle table
 gf_acls <- dbGetQuery(conn = con,
                         statement = readr::read_file("sql/gf_acls.sql")) |>
-  mutate(FISHERY_GROUP = "GROUND",
-         ACL = round(ACL, 1)) |>
-  relocate(FISHERY_GROUP)
+  mutate(ACL = round(ACL, 1))
 
 
 ## I put other ACLs into a spreadsheet here:
@@ -51,18 +53,11 @@ acls <- gf_acls |>
 
 rm(gf_acls
    , other_acls
-   , catch_data_orig)
-
-## make frame for data such that there is a row for each combination of day of year, year, stock, & fishery group
-frame <- dbGetQuery(conn = con, statement = "SELECT DISTINCT day date_trip FROM apsd.dates
-                                             WHERE day BETWEEN '01-MAY-2020' AND '30-APR-2026'") |>
-  cross_join(data.frame(STOCK_ID = unique(catch_data$STOCK_ID))) |>
-  cross_join(data.frame(FISHERY_GROUP = unique(catch_data$FISHERY_GROUP)))
+  # , catch_data_orig
+)
 
 
-
-full_data <- frame |>
-  left_join(catch_data) |>
+full_data <- catch_data |>
   mutate(DISCARD = case_when(DATE_TRIP >= cams_run ~ NA, ## change NAs to 0s (lbs of daily catch) for all but future dates
                              TRUE ~ replace(DISCARD, is.na(DISCARD), 0)),
          LANDINGS = case_when(DATE_TRIP >= cams_run ~ NA,
@@ -74,7 +69,7 @@ full_data <- frame |>
          FISHING_YEAR = if_else(month(DATE_TRIP) %in% c(1,2,3,4), YEAR - 1, YEAR), ## add groundfish FY
          DOY = format(DATE_TRIP, "%m-%d")) |> ## day of year for plotting
   left_join(acls, by = join_by(FISHING_YEAR, STOCK_ID, FISHERY_GROUP)) |> ## join in ACL data
-  group_by(STOCK_ID, FISHERY_GROUP, FISHING_YEAR) |>
+  group_by(STOCK_ID, FISHERY_GROUP, YEAR) |>
   arrange(DATE_TRIP) |>
   mutate(TRAJ = cumsum(case_when(FISHING_YEAR == 2025 ~ round(ACL/365, 2)))) |>
   ungroup() |>
@@ -89,9 +84,10 @@ full_data <- frame |>
   mutate(FY_LAND_CUMUL = round(cumsum(LANDINGS)),
          FY_DISC_CUMUL = round(cumsum(DISCARD)),
          FY_CATCH_CUMUL = round(cumsum(CATCH)),
-         PERC_QUOTA = round(FY_CATCH_CUMUL/ACL * 100, 1))
+         PERC_QUOTA = round(FY_CATCH_CUMUL/ACL * 100, 1)) |>
+  mutate(CAMS_RUN = cams_run)
+
+saveRDS(full_data, file = "output/catch_proj_data.rds")
 
 dbDisconnect(conn = con)
-rm(acls, catch_data, con, frame, cams_run)
-
-save(full_data, file = "output/catch_proj_data.rds")
+rm(acls, catch_data, con, cams_run, full_data)

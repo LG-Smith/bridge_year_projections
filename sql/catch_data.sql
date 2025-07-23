@@ -1,9 +1,12 @@
 WITH landings AS (
-SELECT date_trip, fishery_group, stock_id, sum(livlb) landings
+SELECT date_trip, fishery_group, RECREATIONAL,  stock_id, sum(livlb) landings
 FROM (
     -- cams_land
     SELECT TRUNC(l.date_trip) date_trip
-        , CASE WHEN fishery_group = 'GROUND_ASSUMED' THEN 'GROUND' ELSE fishery_group END AS fishery_group
+        , CASE WHEN s.gf = 1 and s.sectid <> 2 THEN 'SECT'
+               WHEN s.gf = 1 and s.sectid = 2 THEN 'CP'
+               ELSE fishery_group END AS fishery_group
+        , fg.RECREATIONAL
         , stock_id
         , sum(l.livlb) livlb
     FROM cams_garfo.cams_land l
@@ -20,14 +23,21 @@ FROM (
         AND stock_id IN ('YELCCGM', 'YELGB', 'YELSNE', 'FLWGB', 'FLWSNEMA', 'HKWGMMA', 'REDGMGBSS')
         AND status <> 'VTR_DISCARD'
     GROUP BY TRUNC(l.date_trip)
-        , CASE WHEN fishery_group = 'GROUND_ASSUMED' THEN 'GROUND' ELSE fishery_group END
+        , CASE WHEN s.gf = 1 and s.sectid <> 2 THEN 'SECT'
+               WHEN s.gf = 1 and s.sectid = 2 THEN 'CP'
+               ELSE fishery_group END
         , stock_id
+        , fg.RECREATIONAL
+
 
     UNION ALL
 
     -- cams_vtr_orphans
     SELECT TRUNC(l.date_trip) date_trip
-        , CASE WHEN fishery_group = 'GROUND_ASSUMED' THEN 'GROUND' ELSE fishery_group END AS fishery_group
+        , CASE WHEN s.gf = 1 and s.sectid <> 2 THEN 'SECT'
+               WHEN s.gf = 1 and s.sectid = 2 THEN 'CP'
+               ELSE fishery_group END AS fishery_group
+        , fg.RECREATIONAL
         , stock_id
         , sum(l.livlb) livlb
     FROM cams_garfo.cams_vtr_orphans l
@@ -44,13 +54,21 @@ FROM (
         AND stock_id IN ('YELCCGM', 'YELGB', 'YELSNE', 'FLWGB', 'FLWSNEMA', 'HKWGMMA', 'REDGMGBSS')
         AND status <> 'VTR_DISCARD'
     GROUP BY TRUNC(l.date_trip)
-        , CASE WHEN fishery_group = 'GROUND_ASSUMED' THEN 'GROUND' ELSE fishery_group END
+        , CASE WHEN s.gf = 1 and s.sectid <> 2 THEN 'SECT'
+               WHEN s.gf = 1 and s.sectid = 2 THEN 'CP'
+               ELSE fishery_group END
         , stock_id
-) GROUP BY date_trip, fishery_group, stock_id
+        , fg.RECREATIONAL
+) GROUP BY date_trip
+, fishery_group, stock_id
+, RECREATIONAL
 ),
 discards AS (
     SELECT TRUNC(d.date_trip) date_trip
-        , CASE WHEN fishery_group = 'GROUND_ASSUMED' THEN 'GROUND' ELSE fishery_group END AS fishery_group
+        , CASE WHEN s.gf = 1 and s.sectid <> 2 THEN 'SECT'
+               WHEN s.gf = 1 and s.sectid = 2 THEN 'CP'
+               ELSE fishery_group END AS fishery_group
+        , fg.RECREATIONAL
         , stock_id
         , SUM(d.cams_discard) AS discard
     FROM cams_garfo.cams_discard_all_years d
@@ -66,8 +84,11 @@ discards AS (
     WHERE d.date_trip >= '01-MAY-2020'
       AND stock_id IN ('YELCCGM', 'YELGB', 'YELSNE', 'FLWGB', 'FLWSNEMA', 'HKWGMMA', 'REDGMGBSS')
     GROUP BY  TRUNC(d.date_trip)
-        , CASE WHEN fishery_group = 'GROUND_ASSUMED' THEN 'GROUND' ELSE fishery_group END
+        , CASE WHEN s.gf = 1 and s.sectid <> 2 THEN 'SECT'
+               WHEN s.gf = 1 and s.sectid = 2 THEN 'CP'
+               ELSE fishery_group END
         , stock_id
+        , fg.RECREATIONAL
 )
 
 --- main ----
@@ -82,3 +103,5 @@ LEFT JOIN landings land
 ON disc.stock_id = land.stock_id
 AND disc.fishery_group = land.fishery_group
 AND disc.date_trip = land.date_trip
+WHERE disc.fishery_group NOT IN ('PCHARTER','NAFO','OUTSIDE','RESEARCH')
+AND disc.recreational = 0
