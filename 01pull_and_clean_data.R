@@ -42,11 +42,18 @@ gf_acls <- dbGetQuery(conn = con,
                         statement = readr::read_file("sql/gf_acls.sql")) |>
   mutate(ACL = round(ACL, 1))
 
+gf_totals <- gf_acls |>
+  group_by(FISHING_YEAR, STOCK_ID) |>
+  summarise(FISHERY_GROUP = 'GROUND'
+            , ACL = sum(ACL, na.rm = TRUE)) |>
+  relocate(FISHING_YEAR, STOCK_ID, ACL, FISHERY_GROUP) |>
+  rbind(gf_acls)
+
 
 ## I put other ACLs into a spreadsheet here:
 other_acls <- read_xlsx("data/bridge_year_acls.xlsx")
 
-acls <- gf_acls |>
+acls <- gf_totals |>
   rbind(other_acls) |>
   dplyr::filter(STOCK_ID %in% c('YELCCGM', 'YELGB', 'YELSNE', 'FLWGB', 'FLWSNEMA', 'HKWGMMA', 'REDGMGBSS')) |>
   mutate(ACL = round(ACL*2204.62262)) # convert from MT to lbs

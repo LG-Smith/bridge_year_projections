@@ -1,0 +1,315 @@
+---
+title: "CY2025 Bridge Year Projections"
+format: 
+  html:
+    page-layout: full
+    toc: true
+    toc-location: left
+editor: visual
+embed-resources: true
+execute: 
+  echo: false
+  message: false
+  warning: false
+---
+
+```{r}
+#|label: "run projections and make table"
+library(ggplot2)
+library(dplyr)
+library(tidyverse)
+library(htmltools)
+data <- readRDS(file = "output/catch_proj_data.rds")
+`%!in%` <- Negate(`%in%`)
+source("R/simple_projection_fnc.R")
+
+stock <- unique(data$STOCK_ID)
+
+
+for (i in 1:length(stock)) {
+
+  data_stock <- filter(data, STOCK_ID == stock[i])
+  fishery_group <- unique(data_stock$FISHERY_GROUP)
+
+  for (j in 1:length(fishery_group)) {
+
+    assign(paste0(stock[i],"_",fishery_group[j]), simple_projection(data = data_stock
+                                                                    , stock = stock[i]
+                                                                    , fishery_group = fishery_group[j]))
+
+
+  }
+
+}
+```
+
+# Projection Table
+
+```{r}
+table <- data.frame(stock = "GOM Yellowtail",
+                    total_catch = YELCCGM_SECT$final_MT + YELCCGM_CP$final_MT + YELCCGM_STATE$final_MT + YELCCGM_OTHER$final_MT,
+                    groundfish = YELCCGM_SECT$final_MT + YELCCGM_CP$final_MT,
+                    sector = YELCCGM_SECT$final_MT,
+                    common_pool = YELCCGM_CP$final_MT,
+                    rec = '*',
+                    scallop = 'NA*',
+                    small_mesh = 'NA*',
+                    state = YELCCGM_STATE$final_MT,
+                    other = YELCCGM_OTHER$final_MT) |>
+  rbind(data.frame(stock = "GB Yellowtail",
+                    total_catch = YELGB_GROUND$final_MT + `YELGB_SQUID/WHITING`$final_MT + YELGB_SCALLOP$final_MT + YELGB_OTHER$final_MT,
+                    groundfish = YELGB_GROUND$final_MT,
+                    sector = 'NA**',
+                    common_pool = 'NA**',
+                    rec = '*',
+                    scallop = YELGB_SCALLOP$final_MT,
+                    small_mesh = `YELGB_SQUID/WHITING`$final_MT,
+                    state = "NA",
+                    other = YELGB_OTHER$final_MT)) |>
+  rbind(data.frame(stock = "SNE Yellowtail",
+                   total_catch = YELSNE_CP$final_MT + YELSNE_SECT$final_MT + YELSNE_SCALLOP$final_MT + YELSNE_STATE$final_MT + YELSNE_OTHER$final_MT, 
+                   groundfish =  YELSNE_CP$final_MT + YELSNE_SECT$final_MT,
+                   sector = YELSNE_SECT$final_MT,
+                   common_pool = YELSNE_CP$final_MT,
+                   rec = '*',
+                   scallop = YELSNE_SCALLOP$final_MT,
+                   small_mesh = "NA*",
+                   state = YELSNE_STATE$final_MT,
+                   other = YELSNE_OTHER$final_MT)) |>
+  rbind(data.frame(stock = "GB Winter Flounder",
+                   total_catch = FLWGB_GROUND$final_MT + FLWGB_OTHER$final_MT, 
+                   groundfish =  FLWGB_GROUND$final_MT,
+                   sector = "NA**",
+                   common_pool = "NA**",
+                   rec = '*',
+                   scallop = "NA*",
+                   small_mesh = "NA*",
+                   state = "NA",
+                   other = FLWGB_OTHER$final_MT)) |>
+  rbind(data.frame(stock = "SNEMA Winter Flounder",
+                   total_catch = FLWSNEMA_CP$final_MT + FLWSNEMA_OTHER$final_MT + FLWSNEMA_SECT$final_MT + FLWSNEMA_STATE$final_MT, 
+                   groundfish = FLWSNEMA_CP$final_MT + FLWSNEMA_SECT$final_MT,
+                   sector = FLWSNEMA_SECT$final_MT,
+                   common_pool = FLWSNEMA_CP$final_MT,
+                   rec = '*',
+                   scallop = "NA*",
+                   small_mesh = "NA*",
+                   state = FLWSNEMA_STATE$final_MT,
+                   other =  FLWSNEMA_OTHER$final_MT)) |> 
+  rbind(data.frame(stock = "White Hake",
+                   total_catch = HKWGMMA_CP$final_MT + HKWGMMA_OTHER$final_MT + HKWGMMA_SECT$final_MT + HKWGMMA_STATE$final_MT,
+                   groundfish = HKWGMMA_CP$final_MT + HKWGMMA_SECT$final_MT,
+                   sector = HKWGMMA_SECT$final_MT,
+                   common_pool = HKWGMMA_CP$final_MT,
+                   rec = '*',
+                   scallop = "NA*",
+                   small_mesh = "NA*",
+                   state = HKWGMMA_STATE$final_MT,
+                   other =  HKWGMMA_OTHER$final_MT)) |>
+  rbind(data.frame(stock = "Redfish",
+                   total_catch = REDGMGBSS_CP$final_MT + REDGMGBSS_OTHER$final_MT + REDGMGBSS_SECT$final_MT + REDGMGBSS_STATE$final_MT,
+                   groundfish = REDGMGBSS_CP$final_MT + REDGMGBSS_SECT$final_MT,
+                   sector = REDGMGBSS_SECT$final_MT,
+                   common_pool = REDGMGBSS_CP$final_MT,
+                   rec = '*',
+                   scallop = "NA*",
+                   small_mesh = "NA*",
+                   state = REDGMGBSS_STATE$final_MT,
+                   other =  REDGMGBSS_OTHER$final_MT))
+
+DT::datatable(table,
+              caption = htmltools::tags$caption("* - Recreational Data for FY24 are not yet available",
+  tags$br(),
+  "NA* - When no sub-ACL is allocated, component is part of 'other' category",
+  tags$br(),
+  "NA** - Sector and Common Pool values combined for confidentiality"),
+    extensions = 'Buttons',
+    options = list(
+                                paging = TRUE,
+                                searching = TRUE,
+                                fixedColumns = TRUE,
+                                autoWidth = TRUE,
+                                ordering = TRUE,
+                                dom = 'tB',
+                                buttons = c('copy', 'csv', 'excel'))) # Inserts a line break
+
+
+```
+
+Methods: Calendar 2024 catch data are scaled using the mean difference in catch from CY24 to CY25 over the period June 1st - July 24th.
+
+## GOM Yellowtail Flounder
+
+### Sector
+
+```{r}
+YELCCGM_SECT$plot
+```
+
+### Common Pool
+
+```{r}
+YELCCGM_CP$plot
+```
+
+### State
+
+```{r}
+YELCCGM_STATE$plot
+```
+
+### Other
+
+```{r}
+YELCCGM_OTHER$plot
+```
+
+# GB Yellowtail
+
+### Groundfish
+
+```{r}
+YELGB_GROUND$plot
+```
+
+### Scallop
+
+```{r}
+YELGB_SCALLOP$plot
+```
+
+### Small Mesh
+
+```{r}
+`YELGB_SQUID/WHITING`$plot
+```
+
+### Other
+
+```{r}
+YELGB_OTHER$plot
+```
+
+# SNE Yellowtail
+
+## Sector
+
+```{r}
+YELSNE_SECT$plot
+```
+
+### Common Pool
+
+```{r}
+YELSNE_CP$plot  
+```
+
+### Scallop
+
+```{r}
+YELSNE_SCALLOP$plot
+```
+
+### State
+
+```{r}
+YELSNE_STATE$plot
+```
+
+### Other
+
+```{r}
+YELSNE_OTHER$plot
+```
+
+# GB Winter Flounder
+
+### Groundfish
+
+```{r}
+FLWGB_GROUND$plot
+```
+
+### Other
+
+```{r}
+FLWGB_OTHER$plot
+```
+
+# SNE Winter Flounder
+
+### Sector
+
+```{r}
+FLWSNEMA_SECT$plot
+```
+
+### Common Pool
+
+```{r}
+FLWSNEMA_CP$plot
+```
+
+### State
+
+```{r}
+FLWSNEMA_STATE$plot
+```
+
+### Other
+
+```{r}
+FLWSNEMA_OTHER$plot
+```
+
+# White Hake
+
+### Sector
+
+```{r}
+HKWGMMA_SECT$plot
+```
+
+### Common Pool
+
+```{r}
+HKWGMMA_CP$plot
+```
+
+### State
+
+```{r}
+HKWGMMA_STATE$plot
+```
+
+### Other
+
+```{r}
+HKWGMMA_OTHER$plot
+```
+
+# Acadian Redfish
+
+## Sector
+
+```{r}
+REDGMGBSS_SECT$plot
+```
+
+### Common Pool
+
+```{r}
+REDGMGBSS_CP$plot
+```
+
+### State
+
+```{r}
+REDGMGBSS_STATE$plot
+```
+
+### Other
+
+```{r}
+REDGMGBSS_OTHER$plot
+```

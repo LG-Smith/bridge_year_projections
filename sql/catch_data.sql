@@ -1,12 +1,11 @@
 WITH landings AS (
-SELECT date_trip, fishery_group, RECREATIONAL,  stock_id, sum(livlb) landings
+SELECT date_trip, fishery_group,  stock_id, sum(livlb) landings
 FROM (
     -- cams_land
     SELECT TRUNC(l.date_trip) date_trip
         , CASE WHEN s.gf = 1 and s.sectid <> 2 THEN 'SECT'
                WHEN s.gf = 1 and s.sectid = 2 THEN 'CP'
                ELSE fishery_group END AS fishery_group
-        , fg.RECREATIONAL
         , stock_id
         , sum(l.livlb) livlb
     FROM cams_garfo.cams_land l
@@ -27,7 +26,6 @@ FROM (
                WHEN s.gf = 1 and s.sectid = 2 THEN 'CP'
                ELSE fishery_group END
         , stock_id
-        , fg.RECREATIONAL
 
 
     UNION ALL
@@ -37,7 +35,6 @@ FROM (
         , CASE WHEN s.gf = 1 and s.sectid <> 2 THEN 'SECT'
                WHEN s.gf = 1 and s.sectid = 2 THEN 'CP'
                ELSE fishery_group END AS fishery_group
-        , fg.RECREATIONAL
         , stock_id
         , sum(l.livlb) livlb
     FROM cams_garfo.cams_vtr_orphans l
@@ -58,10 +55,8 @@ FROM (
                WHEN s.gf = 1 and s.sectid = 2 THEN 'CP'
                ELSE fishery_group END
         , stock_id
-        , fg.RECREATIONAL
 ) GROUP BY date_trip
 , fishery_group, stock_id
-, RECREATIONAL
 ),
 discards AS (
     SELECT TRUNC(d.date_trip) date_trip
@@ -103,5 +98,5 @@ LEFT JOIN landings land
 ON disc.stock_id = land.stock_id
 AND disc.fishery_group = land.fishery_group
 AND disc.date_trip = land.date_trip
-WHERE disc.fishery_group NOT IN ('PCHARTER','NAFO','OUTSIDE','RESEARCH')
+WHERE disc.fishery_group NOT IN ('PCHARTER','NAFO','OUTSIDE','RESEARCH', 'RECREATIONAL')
 AND disc.recreational = 0

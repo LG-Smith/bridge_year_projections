@@ -75,7 +75,7 @@ plot <- ggplot(data = projection) +
                date_labels = "%B") +
   geom_hline(aes(yintercept = ACL2025), color = "red") +
   labs(title = "Calendar Year Cumulative Catch", subtitle = paste0(stock, " in ", fishery_group)) +
-  annotate("text", label = "FY 2025 sub-ACL", x = as.Date("2025-01-10"), y = ACL2025 + 1.5, size = 2) +
+  annotate("text", label = if_else(ACL2025 == 0, " ", "FY 2025 sub-ACL"), x = as.Date("2025-01-15"), y = ACL2025 + 1.5, size = 2) +
   ylab("Catch (MT)") +
   xlab("Day of Year") +
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
