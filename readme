@@ -16,3 +16,9 @@ R folder
 
 Analysis folder
 - Other scripts not used directly in making final projections- exploratory data analysis, etc.
+
+
+** notes for development:
+- Turn pull_and_clean_data script into a function with arguments for which years of data to pull and which species (hard-coded in SQL right now)
+- Change projections to be on the daily timestep and then aggregate to week to get rid of the little gap between known catch and projections in plots
+- add option for bootstrapping to the simple projections function
