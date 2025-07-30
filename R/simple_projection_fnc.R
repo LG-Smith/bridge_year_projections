@@ -49,7 +49,7 @@ projection_data <- stock_data |>
   pivot_wider(names_from = YEAR, values_from = CATCH, values_fill = 0) |>
   mutate(PERC_CHANGE = (`2025`-`2024`)/`2024`)
 
-CHANGE <- filter(projection_data, WEEK >= start_date & WEEK < cams_date) |>
+CHANGE <- filter(projection_data, WEEK >= start_date) |>
   select(PERC_CHANGE)
 
 CHANGE$PERC_CHANGE[is.infinite(CHANGE$PERC_CHANGE)] <- NA
