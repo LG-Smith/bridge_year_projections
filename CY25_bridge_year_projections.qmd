@@ -19,6 +19,7 @@ library(ggplot2)
 library(dplyr)
 library(tidyverse)
 library(htmltools)
+library(lubridate)
 data <- readRDS(file = "output/catch_proj_data.rds")
 `%!in%` <- Negate(`%in%`)
 source("R/simple_projection_fnc.R")
@@ -33,9 +34,7 @@ for (i in 1:length(stock)) {
 
   for (j in 1:length(fishery_group)) {
 
-    assign(paste0(stock[i],"_",fishery_group[j]), simple_projection(data = data_stock
-                                                                    , stock = stock[i]
-                                                                    , fishery_group = fishery_group[j]))
+    assign(paste0(stock[i],"_",fishery_group[j]), simple_projection(data = data_stock, stock = stock[i], fishery_group = fishery_group[j], start_date = '2025-06-01'))
 
 
   }
@@ -51,7 +50,7 @@ table <- data.frame(stock = "GOM Yellowtail",
                     groundfish = YELCCGM_SECT$final_MT + YELCCGM_CP$final_MT,
                     sector = YELCCGM_SECT$final_MT,
                     common_pool = YELCCGM_CP$final_MT,
-                    rec = '*',
+                    rec = '-',
                     scallop = 'NA*',
                     small_mesh = 'NA*',
                     state = YELCCGM_STATE$final_MT,
@@ -61,7 +60,7 @@ table <- data.frame(stock = "GOM Yellowtail",
                     groundfish = YELGB_GROUND$final_MT,
                     sector = 'NA**',
                     common_pool = 'NA**',
-                    rec = '*',
+                    rec = '-',
                     scallop = YELGB_SCALLOP$final_MT,
                     small_mesh = `YELGB_SQUID/WHITING`$final_MT,
                     state = "NA",
@@ -71,7 +70,7 @@ table <- data.frame(stock = "GOM Yellowtail",
                    groundfish =  YELSNE_CP$final_MT + YELSNE_SECT$final_MT,
                    sector = YELSNE_SECT$final_MT,
                    common_pool = YELSNE_CP$final_MT,
-                   rec = '*',
+                   rec = '-',
                    scallop = YELSNE_SCALLOP$final_MT,
                    small_mesh = "NA*",
                    state = YELSNE_STATE$final_MT,
@@ -81,7 +80,7 @@ table <- data.frame(stock = "GOM Yellowtail",
                    groundfish =  FLWGB_GROUND$final_MT,
                    sector = "NA**",
                    common_pool = "NA**",
-                   rec = '*',
+                   rec = '-',
                    scallop = "NA*",
                    small_mesh = "NA*",
                    state = "NA",
@@ -101,7 +100,7 @@ table <- data.frame(stock = "GOM Yellowtail",
                    groundfish = HKWGMMA_CP$final_MT + HKWGMMA_SECT$final_MT,
                    sector = HKWGMMA_SECT$final_MT,
                    common_pool = HKWGMMA_CP$final_MT,
-                   rec = '*',
+                   rec = '-',
                    scallop = "NA*",
                    small_mesh = "NA*",
                    state = HKWGMMA_STATE$final_MT,
@@ -111,14 +110,14 @@ table <- data.frame(stock = "GOM Yellowtail",
                    groundfish = REDGMGBSS_CP$final_MT + REDGMGBSS_SECT$final_MT,
                    sector = REDGMGBSS_SECT$final_MT,
                    common_pool = REDGMGBSS_CP$final_MT,
-                   rec = '*',
+                   rec = '-',
                    scallop = "NA*",
                    small_mesh = "NA*",
                    state = REDGMGBSS_STATE$final_MT,
                    other =  REDGMGBSS_OTHER$final_MT))
 
 DT::datatable(table,
-              caption = htmltools::tags$caption("* - Recreational Data for FY24 are not yet available",
+              caption = htmltools::tags$caption("* - Recreational and Canada Landings Data are based on average of three previous calendar years",
   tags$br(),
   "NA* - When no sub-ACL is allocated, component is part of 'other' category",
   tags$br(),
@@ -136,7 +135,7 @@ DT::datatable(table,
 
 ```
 
-Methods: Calendar 2024 catch data are scaled using the mean difference in catch from CY24 to CY25 over the period June 1st - July 24th.
+Methods: Calendar 2024 catch data are scaled using the mean difference in catch from CY24 to CY25 over the period June 1st - July 14th.
 
 ## GOM Yellowtail Flounder
 
@@ -313,3 +312,4 @@ REDGMGBSS_STATE$plot
 ```{r}
 REDGMGBSS_OTHER$plot
 ```
+
