@@ -94,6 +94,15 @@ full_data <- catch_data |>
          PERC_QUOTA = round(FY_CATCH_CUMUL/ACL * 100, 1)) |>
   mutate(CAMS_RUN = cams_run)
 
+
+if (!dir.exists("output/")) {
+  # If it doesn't exist, create it
+  dir.create("output/", recursive = TRUE)
+  print(paste("Directory created:", "output/"))
+} else {
+  print(paste("Directory already exists:", "output/"))
+}
+
 saveRDS(full_data, file = "output/catch_proj_data.rds")
 
 dbDisconnect(conn = con)
