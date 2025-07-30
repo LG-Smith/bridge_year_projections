@@ -2,9 +2,9 @@
 .Rhistory
 .RData
 .Ruserdata
-output/
 .Rdata
+.rds
 .httr-oauth
 .DS_Store
 .quarto
-/FLWSNEMA
+.html
