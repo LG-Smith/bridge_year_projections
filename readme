@@ -2,7 +2,7 @@ To run or update projections:
 
 
 - For years beyond 2025
-        - update the "data/bridge_year_acls.xlsx" file with the current fishing year non-groundfish sub-components
+        - update the "data/bridge_year_acls.xlsx" file with the current fishing year non-groundfish sub-components. Groundfish sub-ACLs are pulled from oracle table using a script in the sql folder.
         - update start year and stocks needed in SQL script "sql/catch_data.sql" (i.e. stock_id IN ('YELCCGM', 'YELGB', 'YELSNE', 'FLWGB',             'FLWSNEMA', 'HKWGMMA', 'REDGMGBSS'))
 - Run script 01pull_and_clean_data.R. This uses ROracle to pull data from CAMS tables. Establishes the oracle connection using a function particular to GARFO/APSD, which uses the keyring package so that our internal scripts are more interchangeable between users. Outside users may need to establish the connection differently.
 - formats data and saves the results in "output" folder.
