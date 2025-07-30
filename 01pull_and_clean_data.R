@@ -17,6 +17,8 @@ catch_data_orig <- dbGetQuery(conn = con,
 cams_run <- as.Date(dbGetQuery(conn = con
                                , statement = "SELECT MAX(DISTINCT date_run) date_run FROM cams_garfo.cams_land")$DATE_RUN) - 2
 
+
+#### Beyond 2025 - add fishery group handling for each stock
 catch_data <- catch_data_orig |>
   mutate(FISHERY_GROUP = case_when(STOCK_ID %in% c('YELCCGM', 'FLWSNEMA', 'HKWGMMA', 'REDGMGBSS')
                                    & FISHERY_GROUP %in% c('SECT', 'CP', 'STATE') ~ FISHERY_GROUP,
