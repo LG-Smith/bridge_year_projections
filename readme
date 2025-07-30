@@ -10,6 +10,7 @@ Render to CY25_bridge_year_projections.qmd file
 - Creates HTML file with interactive table and plots for each stock and sub-component
 
 
+Additional Info:
 R folder
 - contains functions used in projections, currently just the "simple_projection_fnc.R", which scales the previous years data by the mean change from previous year to current year over a user-defined period.
 
