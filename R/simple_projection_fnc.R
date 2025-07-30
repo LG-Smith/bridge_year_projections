@@ -1,11 +1,27 @@
-simple_projection <- function(data, stock, fishery_group) {
+#' Simple Projections for Bridge Year Estimates
+#'
+#' @param data data from script 01pull_and_clean_data.R
+#' @param stock stock for current estimate
+#' @param fishery_group fishery group or sub-component
+#' @param start_date establishes date range for calculating the mean change from previous year to next. End date is two mondays before the most recent CAMS run (creates buffer for mid-week CAMS runs). For example, if CAMS run date is 7/27/2025 (a Sunday), the date range would terminate on 7/15/2024. 6 weeks is typical for the full date range. Format as 'YYYY-mm-d'
+#'
+#' @return value for total MT and plot of annual weekly catch + projected data
+#' @export
+#'
+#' @examples
+simple_projection <- function(data, stock, fishery_group, start_date = '2025-06-01') {
+
+start_date <- as.Date(start_date)
+
+cams_date <- floor_date(max(data$CAMS_RUN), "weeks", week_start = 1) - 7
 
 proj_data <- data |>
   mutate(YEAR = as.factor(YEAR),
          FISHING_YEAR = as.factor(FISHING_YEAR),
          DOY = as.Date(paste0('2025-', DOY), format = "%Y-%m-%d"),
          WEEKDAY = wday(DATE_TRIP)) |>
-  dplyr::filter(YEAR %!in% c(2020, 2026)) |>
+  dplyr::filter(YEAR %!in% c(2020, 2026),
+                DATE_TRIP < cams_date) |>
   mutate(WEEK = floor_date(DOY, "weeks", week_start = 1)) |>
   group_by(YEAR, WEEK, STOCK_ID, FISHERY_GROUP) |>
   summarise(DISCARD = sum(DISCARD),
@@ -20,8 +36,6 @@ proj_data <- data |>
   ungroup()
 
 
-cams_date <- max(data$CAMS_RUN)
-
 stock_data <- proj_data |>
   filter(STOCK_ID == stock, FISHERY_GROUP == fishery_group)
 
@@ -29,15 +43,13 @@ ACL2025 <- round(unique(filter(data, STOCK_ID == stock
                                , FISHERY_GROUP == fishery_group
                                , FISHING_YEAR == 2025)$ACL)/2204.62262, 1)
 
-### Sector
-## CY 24 scaled just a little higher
 projection_data <- stock_data |>
   ungroup() |>
   select(WEEK, CATCH, YEAR) |>
   pivot_wider(names_from = YEAR, values_from = CATCH, values_fill = 0) |>
   mutate(PERC_CHANGE = (`2025`-`2024`)/`2024`)
 
-CHANGE <- filter(projection_data, WEEK >= as.Date('2025-06-01')) |>
+CHANGE <- filter(projection_data, WEEK >= start_date & WEEK < cams_date) |>
   select(PERC_CHANGE)
 
 CHANGE$PERC_CHANGE[is.infinite(CHANGE$PERC_CHANGE)] <- NA
@@ -46,14 +58,14 @@ CHANGE$PERC_CHANGE[is.nan(CHANGE$PERC_CHANGE)] <- NA
 DIFF_MEAN <- mean(CHANGE$PERC_CHANGE, na.rm = TRUE)/100
 
 projection <- projection_data |>
-  mutate(`2025_proj` =  if_else(as.Date(WEEK) <= cams_date, `2025`,
+  mutate(`2025_proj` =  if_else(as.Date(WEEK) < cams_date, `2025`,
                               `2024` + (`2024` * DIFF_MEAN))) |>
   pivot_longer(-c(PERC_CHANGE, WEEK), names_to = 'YEAR', values_to = 'CATCH') |>
   mutate(CATCH = replace(CATCH, is.na(CATCH), 0)) |>
   group_by(YEAR) |>
   arrange(WEEK) |>
   mutate(CATCH_CUMUL = cumsum(CATCH)) |>
-  mutate(CATCH_CUMUL = case_when(YEAR == "2025_proj" & WEEK <= cams_date ~ NA,
+  mutate(CATCH_CUMUL = case_when(YEAR == "2025_proj" & WEEK < cams_date ~ NA,
                                  YEAR == 2025 & WEEK >= cams_date ~ NA,
                                  TRUE ~ CATCH_CUMUL))
 
