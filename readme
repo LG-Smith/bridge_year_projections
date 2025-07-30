@@ -1,0 +1,17 @@
+To run or update projections:
+
+Run script 01pull_and_clean_data.R
+- uses ROracle to pull data from CAMS tables. Establishes the oracle connection using a function particular to GARFO/APSD, which uses the keyring package so that our internal scripts are more interchangeable between users. Outside users may need to establish the connection differently.
+- formats data and saves the results in "output" folder.
+- data are potentially confidential at this level (daily landings/discard estimates), and are therefore not saved to the github.
+
+Render to CY25_bridge_year_projections.qmd file
+- this runs the projections for each stock/sub-component from the data in 'output' folder
+- Creates HTML file with interactive table and plots for each stock and sub-component
+
+
+R folder
+- contains functions used in projections, currently just the "simple_projection_fnc.R", which scales the previous years data by the mean change from previous year to current year over a user-defined period.
+
+Analysis folder
+- Other scripts not used directly in making final projections- exploratory data analysis, etc.
